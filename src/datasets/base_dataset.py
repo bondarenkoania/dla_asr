@@ -82,7 +82,7 @@ class BaseDataset(Dataset):
         audio_path = data_dict["path"]
         audio = self.load_audio(audio_path)
         text = data_dict["text"]
-        text_encoded = self.text_encoder.encode(text)
+        text_encoded = self.text_encoder.encode(text) if text is not None else None
 
         spectrogram = self.get_spectrogram(audio)
 
@@ -188,7 +188,12 @@ class BaseDataset(Dataset):
         if max_text_length is not None:
             exceeds_text_length = (
                 np.array(
-                    [len(CTCTextEncoder.normalize_text(el["text"])) for el in index]
+                    [
+                        len(CTCTextEncoder.normalize_text(el["text"]))
+                        if el["text"] is not None
+                        else -1
+                        for el in index
+                    ]
                 )
                 >= max_text_length
             )
