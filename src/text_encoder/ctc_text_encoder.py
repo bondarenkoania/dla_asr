@@ -84,9 +84,6 @@ class CTCTextEncoder:
 
         return self.decode(removed_blanks)
 
-    def ctc_beam_search() -> str:
-        pass  # TODO
-
     @staticmethod
     def normalize_text(text: str):
         text = text.lower()

@@ -4,26 +4,19 @@ import torch
 from torch import Tensor
 
 from src.metrics.base_metric import BaseMetric
-from src.metrics.utils import calc_cer
-
-# TODO add beam search/lm versions
-# Note: they can be written in a pretty way
-# Note 2: overall metric design can be significantly improved
 
 
-class ArgmaxCERMetric(BaseMetric):
-    def __init__(self, text_encoder, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.text_encoder = text_encoder
-
-    def __call__(
-        self, log_probs: Tensor, log_probs_length: Tensor, text: List[str], **kwargs
-    ):
+class CERMetric(BaseMetric):
+    def __call__(self, pred_texts: list[str], target_texts: list[str]):
         cers = []
-        predictions = torch.argmax(log_probs.cpu(), dim=-1).numpy()
-        lengths = log_probs_length.detach().numpy()
-        for log_prob_vec, length, target_text in zip(predictions, lengths, text):
-            target_text = self.text_encoder.normalize_text(target_text)
-            pred_text = self.text_encoder.ctc_decode(log_prob_vec[:length])
-            cers.append(calc_cer(target_text, pred_text))
+        for target_text, pred_text in zip(target_texts, pred_texts):
+            cers.append(self.calc_cer(target_text, pred_text))
+
         return sum(cers) / len(cers)
+
+    @staticmethod
+    def calc_cer(target_text, predicted_text) -> float:
+        # Based on seminar materials
+        # Don't forget to support cases when target_text == ''
+        # TODO
+        pass

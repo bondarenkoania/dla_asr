@@ -23,6 +23,7 @@ class BaseTrainer:
         optimizer,
         lr_scheduler,
         text_encoder,
+        decoders,
         config,
         device,
         dataloaders,
@@ -73,6 +74,7 @@ class BaseTrainer:
         self.optimizer = optimizer
         self.lr_scheduler = lr_scheduler
         self.text_encoder = text_encoder
+        self.decoders = decoders
         self.batch_transforms = batch_transforms
 
         # define dataloaders
@@ -120,15 +122,26 @@ class BaseTrainer:
 
         # define metrics
         self.metrics = metrics
+        metric_names_train = [
+            f"{met.name}_({decoder_name})"
+            for decoder_name in self.decoders
+            for met in self.metrics["train"]
+        ]
+        metric_names_inference = [
+            f"{met.name}_({decoder_name})"
+            for decoder_name in self.decoders
+            for met in self.metrics["inference"]
+        ]
+
         self.train_metrics = MetricTracker(
             *self.config.writer.loss_names,
             "grad_norm",
-            *[m.name for m in self.metrics["train"]],
+            *metric_names_train,
             writer=self.writer,
         )
         self.evaluation_metrics = MetricTracker(
             *self.config.writer.loss_names,
-            *[m.name for m in self.metrics["inference"]],
+            *metric_names_inference,
             writer=self.writer,
         )
 

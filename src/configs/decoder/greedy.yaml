@@ -1,0 +1,2 @@
+Argmax:
+  _target_: src.decoder.CTCGreedyDecoder

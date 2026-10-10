@@ -1,0 +1,6 @@
+Argmax:
+  _target_: src.decoder.CTCGreedyDecoder
+
+BeamSearch:
+  _target_: src.decoder.CTCBeamSearchDecoder
+  beam_size: 5
