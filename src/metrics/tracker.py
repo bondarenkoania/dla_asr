@@ -32,14 +32,25 @@ class MetricTracker:
 
         Args:
             key (str): metric name.
-            value (float): metric value on the batch.
+            value (tuple(int, int) | float): cer/wer numerator and denominator or just metric value on the batch
             n (int): how many times to count this value.
         """
         # if self.writer is not None:
         #     self.writer.add_scalar(key, value)
-        self._data.loc[key, "total"] += value * n
-        self._data.loc[key, "counts"] += n
-        self._data.loc[key, "average"] = self._data.total[key] / self._data.counts[key]
+
+        if isinstance(value, tuple):
+            total_increment, count_increment = value
+        else:
+            total_increment = value * n
+            count_increment = n
+
+        self._data.loc[key, "total"] += total_increment
+        self._data.loc[key, "counts"] += count_increment
+        self._data.loc[key, "average"] = (
+            self._data.total[key] / self._data.counts[key]
+            if self._data.counts[key] != 0
+            else float("nan")
+        )
 
     def avg(self, key):
         """

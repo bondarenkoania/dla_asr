@@ -1,22 +1,47 @@
-from typing import List
-
-import torch
-from torch import Tensor
+from typing import List, Tuple
 
 from src.metrics.base_metric import BaseMetric
 
 
 class WERMetric(BaseMetric):
-    def __call__(self, pred_texts: list[str], target_texts: list[str]):
-        cers = []
-        for target_text, pred_text in zip(target_texts, pred_texts):
-            cers.append(self.calc_wer(target_text, pred_text))
+    def __call__(
+        self, pred_texts: List[str], target_texts: List[str]
+    ) -> Tuple[int, int]:
+        if len(pred_texts) != len(target_texts):
+            raise ValueError("Number of predictions and targets must match")
+        total_errors = 0
+        total_target_length = 0
 
-        return sum(cers) / len(cers)
+        for target_text, pred_text in zip(target_texts, pred_texts):
+            error, length = self.calc_wer_stats(target_text, pred_text)
+            total_errors += error
+            total_target_length += length
+
+        return total_errors, total_target_length
 
     @staticmethod
-    def calc_wer(target_text, predicted_text) -> float:
-        # Based on seminar materials
-        # Don't forget to support cases when target_text == ''
-        # TODO
-        pass
+    def calc_wer_stats(target_text, predicted_text) -> Tuple[int, int]:
+        predicted_words = predicted_text.strip().split()
+        target_words = target_text.strip().split()
+
+        m = len(predicted_words)
+        n = len(target_words)
+
+        dp = [
+            [0] * (n + 1) for _ in range(m + 1)
+        ]  # dp[i][j] = dist between pred[:i] и target[:j]
+        for i in range(m + 1):
+            dp[i][0] = i
+        for j in range(n + 1):
+            dp[0][j] = j
+
+        for i in range(1, m + 1):
+            for j in range(1, n + 1):
+                cost1 = dp[i - 1][j] + 1
+                cost2 = dp[i][j - 1] + 1
+                cost3 = dp[i - 1][j - 1] + int(
+                    target_words[j - 1] != predicted_words[i - 1]
+                )
+                dp[i][j] = min(cost1, cost2, cost3)
+
+        return dp[m][n], n

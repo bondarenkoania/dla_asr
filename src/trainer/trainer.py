@@ -125,12 +125,16 @@ class Trainer(BaseTrainer):
             for decoder_name, pred_texts in pred_texts_by_decoder.items():
                 pred = pred_texts[i]
 
-                wer = WERMetric.calc_wer(target, pred) * 100
-                cer = CERMetric.calc_cer(target, pred) * 100
+                wer_numer, wer_denom = WERMetric.calc_wer_stats(target, pred)
+                cer_numer, cer_denom = CERMetric.calc_cer_stats(target, pred)
 
                 row[f"prediction_({decoder_name})"] = pred
-                row[f"WER_({decoder_name})"] = wer
-                row[f"CER_({decoder_name})"] = cer
+                row[f"WER_({decoder_name})"] = (
+                    wer_numer / wer_denom * 100 if wer_denom != 0 else None
+                )
+                row[f"CER_({decoder_name})"] = (
+                    cer_numer / cer_denom * 100 if cer_denom != 0 else None
+                )
 
             rows[Path(audio_path).name] = row
 
