@@ -13,7 +13,9 @@ class CTCGreedyDecoder(BaseDecoder):
         predictions = torch.argmax(log_probs, dim=-1).cpu().numpy()
         lengths = log_probs_length.detach().cpu().numpy()
 
-        return [
+        pred_texts = [
             self.text_encoder.ctc_decode(pred_vec[:length])
             for pred_vec, length in zip(predictions, lengths)
         ]
+
+        return pred_texts

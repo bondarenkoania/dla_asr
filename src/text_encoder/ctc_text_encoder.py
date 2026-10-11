@@ -61,7 +61,7 @@ class CTCTextEncoder:
 
     def ctc_decode(self, inds) -> str:
         """
-        CTC-decoding after argmax.
+        CTC-decoding.
 
         Args:
             inds (list): list of tokens.
