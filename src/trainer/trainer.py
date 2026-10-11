@@ -99,7 +99,8 @@ class Trainer(BaseTrainer):
         else:
             # Log Stuff
             self.log_spectrogram(**batch)
-            self.log_predictions(**batch)
+            if batch.get("pred_texts_by_decoder"):
+                self.log_predictions(**batch)
 
     def log_spectrogram(self, spectrogram, **batch):
         spectrogram_for_plot = spectrogram[0].detach().cpu()

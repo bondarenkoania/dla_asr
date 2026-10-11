@@ -32,6 +32,12 @@ def main(config):
     # setup text_encoder
     text_encoder = instantiate(config.text_encoder)
 
+    # setup decoders for predictions
+    decoders = {
+        name: instantiate(decoder_config, text_encoder=text_encoder)
+        for name, decoder_config in config.decoder.items()
+    }
+
     # setup data_loader instances
     # batch_transforms should be put on device
     dataloaders, batch_transforms = get_dataloaders(config, text_encoder, device)
@@ -43,10 +49,7 @@ def main(config):
     # get metrics
     metrics = {"inference": []}
     for metric_config in config.metrics.get("inference", []):
-        # use text_encoder in metrics
-        metrics["inference"].append(
-            instantiate(metric_config, text_encoder=text_encoder)
-        )
+        metrics["inference"].append(instantiate(metric_config))
 
     # save_path for model predictions
     save_path = ROOT_PATH / "data" / "saved" / config.inferencer.save_path
@@ -58,6 +61,7 @@ def main(config):
         device=device,
         dataloaders=dataloaders,
         text_encoder=text_encoder,
+        decoders=decoders,
         batch_transforms=batch_transforms,
         save_path=save_path,
         metrics=metrics,
