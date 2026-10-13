@@ -1,0 +1,34 @@
+defaults:
+  - model: baseline
+  - writer: cometml
+  - metrics: debug
+  - datasets: onebatchtest
+  - dataloader: debug
+  - transforms: no_augs
+  - decoder: greedy
+  - lr_scheduler: constant
+  - _self_
+optimizer:
+  _target_: torch.optim.AdamW
+  lr: 3e-4
+  weight_decay: 0.0
+loss_function:
+  _target_: src.loss.CTCLossWrapper
+text_encoder:
+  _target_: src.text_encoder.CTCTextEncoder
+trainer:
+  log_step: 10
+  n_epochs: 400
+  epoch_len: 100
+  device_tensors: ["spectrogram", "text_encoded"]
+  resume_from: null
+  device: cpu
+  override: True
+  monitor: "min val_loss"
+  save_period: 1
+  early_stop: ${trainer.n_epochs}
+  save_dir: "saved"
+  seed: 1
+
+writer:
+  run_name: "mlp_one_batch"

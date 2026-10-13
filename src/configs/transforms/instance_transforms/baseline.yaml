@@ -2,6 +2,9 @@ train:
   get_spectrogram: # special key for getting spectrogram
     _target_: torchaudio.transforms.MelSpectrogram
     sample_rate: 16000
+    n_mels: ${model.n_feats}
+    n_fft: 400
+    hop_length: 200
 
   audio: # name of the tensor on which we apply transform
     _target_: torchvision.transforms.v2.Compose
@@ -24,3 +27,6 @@ inference:
   get_spectrogram:
     _target_: torchaudio.transforms.MelSpectrogram
     sample_rate: 16000
+    n_mels: ${model.n_feats}
+    n_fft: 400
+    hop_length: 200

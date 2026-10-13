@@ -7,7 +7,7 @@ numpy==1.26.4
 torch_audiomentations
 tqdm
 matplotlib
-pandas
+pandas==3.0.6
 wandb
 comet_ml
 hydra-core

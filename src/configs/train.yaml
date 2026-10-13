@@ -1,0 +1,31 @@
+defaults:
+  - model: baseline
+  - writer: cometml
+  - metrics: baseline
+  - datasets: librispeech_train
+  - dataloader: baseline
+  - transforms: only_instance
+  - decoder: greedy
+  - lr_scheduler: one_cycle
+  - _self_
+optimizer:
+  _target_: torch.optim.AdamW
+  lr: 3e-4
+loss_function:
+  _target_: src.loss.CTCLossWrapper
+text_encoder:
+  _target_: src.text_encoder.CTCTextEncoder
+trainer:
+  log_step: 50
+  n_epochs: 50
+  epoch_len: 200
+  device_tensors: ["spectrogram", "text_encoded"]
+  resume_from: null # null or checkpoint filename relative to this run's save directory
+  device: auto
+  override: False # if True, will override the previous run with the same name
+  monitor_decoder: null # auto-select if exactly one decoder is configured
+  monitor: "min val_WER" # "off" or "max/min metric_name"
+  save_period: 5 # checkpoint each save_period epochs
+  early_stop: ${trainer.n_epochs} # epochs for early stopping
+  save_dir: "saved"
+  seed: 1

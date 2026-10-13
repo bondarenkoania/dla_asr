@@ -1,14 +1,16 @@
 defaults:
   - model: baseline
   - metrics: baseline
-  - datasets: librispeech
+  - datasets: librispeech_test
   - dataloader: baseline
-  - transforms: baseline
+  - transforms: no_augs
   - decoder: greedy
   - _self_
+text_encoder:
+  _target_: src.text_encoder.CTCTextEncoder
 inferencer:
-  device_tensors: ["data_object", "labels"] # which tensors should be on device (ex. GPU)
-  device: auto # device name or "auto"
-  save_path: "predictions" # any name here, can be a dataset name
+  device_tensors: ["spectrogram"]
+  device: auto
+  save_path: ???
   seed: 1
-  from_pretrained: "saved/model_best.pth" # path to the pretrained model
+  from_pretrained: ???

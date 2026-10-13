@@ -112,6 +112,27 @@ class BaseTrainer:
             self.mnt_mode, self.mnt_metric = self.monitor.split()
             assert self.mnt_mode in ["min", "max"]
 
+            mnt_metrics = {
+                f"{part}_{met.name}"
+                for part in self.evaluation_dataloaders
+                for met in metrics["inference"]
+            }
+            if self.mnt_metric in mnt_metrics:
+                decoder_name = self.cfg_trainer.get("monitor_decoder")
+                if decoder_name is None:
+                    if len(self.decoders) != 1:
+                        raise ValueError(
+                            "Set trainer.monitor_decoder when monitoring CER/WER "
+                            "with multiple decoders."
+                        )
+                    decoder_name = self.decoders.keys()[0]
+                if decoder_name not in self.decoders:
+                    raise ValueError(
+                        f"Unknown monitor decoder: {decoder_name}. "
+                        f"Available decoders: {list(self.decoders)}"
+                    )
+                self.mnt_metric = f"{self.mnt_metric}_({decoder_name})"
+
             self.mnt_best = inf if self.mnt_mode == "min" else -inf
             self.early_stop = self.cfg_trainer.get("early_stop", inf)
             if self.early_stop <= 0:
