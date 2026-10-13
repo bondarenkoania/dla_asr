@@ -18,7 +18,7 @@ class CustomDirAudioDataset(BaseDataset):
                 length = info.num_frames / info.sample_rate
                 entry["audio_len"] = length
                 entry["text"] = None
-                if transcription_dir:
+                if transcription_dir.is_dir():
                     transc_path = Path(transcription_dir) / (path.stem + ".txt")
                     with transc_path.open() as f:
                         entry["text"] = f.read().strip()
