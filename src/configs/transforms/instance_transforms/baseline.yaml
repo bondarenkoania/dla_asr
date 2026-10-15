@@ -4,12 +4,27 @@ train:
     sample_rate: 16000
     n_mels: ${model.n_feats}
     n_fft: 400
-    hop_length: 200
+    win_length: 400
+    hop_length: 160
 
   audio: # name of the tensor on which we apply transform
     _target_: torchvision.transforms.v2.Compose
     transforms:
-      - _target_: src.transforms.wav_augs.Gain
+      - _target_: torchvision.transforms.v2.RandomApply
+        p: 0.5
+        transforms:
+          - _target_: src.transforms.wav_augs.SpeedPerturbation
+      - _target_: torchvision.transforms.v2.RandomApply
+        p: 0.5
+        transforms:
+          - _target_: src.transforms.wav_augs.Gain
+            min_gain_in_db: -6.0
+            max_gain_in_db: 6.0
+      - _target_: torchvision.transforms.v2.RandomApply
+        p: 0.5
+        transforms:
+          - _target_: src.transforms.wav_augs.AddBackgroundNoise
+            noise_dir: data/noises
 
   spectrogram:
     _target_: torchvision.transforms.v2.Compose
@@ -29,4 +44,5 @@ inference:
     sample_rate: 16000
     n_mels: ${model.n_feats}
     n_fft: 400
-    hop_length: 200
+    win_length: 400
+    hop_length: 160

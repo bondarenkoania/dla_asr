@@ -4,7 +4,9 @@ train:
     sample_rate: 16000
     n_mels: ${model.n_feats}
     n_fft: 400
-    hop_length: 200
+    win_length: 400
+    hop_length: 160
+
 
 inference:
   get_spectrogram:
@@ -12,4 +14,5 @@ inference:
     sample_rate: 16000
     n_mels: ${model.n_feats}
     n_fft: 400
-    hop_length: 200
+    win_length: 400
+    hop_length: 160

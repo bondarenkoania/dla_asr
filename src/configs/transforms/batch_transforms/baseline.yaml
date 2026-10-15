@@ -1,28 +1,12 @@
-train:
-  audio: # name of the tensor on which we apply transform
-    _target_: torch.nn.Sequential
-    _args_:
-      - _target_: src.transforms.Normalize1D
-        mean: 0.5
-        std: 0.5
-  spectrogram:
-    _target_: torch.nn.Sequential
-    _args_:
-      - _target_: src.transforms.Normalize1D
-        mean: 0.5
-        std: 0.5
+train: null
+inference: null
 
-
-inference:
-  audio: # name of the tensor on which we apply transform
-    _target_: torch.nn.Sequential
-    _args_:
-      - _target_: src.transforms.Normalize1D
-        mean: 0.5
-        std: 0.5
-  spectrogram:
-    _target_: torch.nn.Sequential
-    _args_:
-      - _target_: src.transforms.Normalize1D
-        mean: 0.5
-        std: 0.5
+# Example structure:
+# train:
+#   spectrogram: # name of the batch tensor to transform
+#     _target_: torch.nn.Identity
+#   audio:
+#     _target_: src.transforms.Normalize1D
+# inference:
+#   spectrogram:
+#     _target_: torch.nn.Identity

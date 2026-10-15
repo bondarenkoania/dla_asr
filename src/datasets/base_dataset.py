@@ -87,6 +87,7 @@ class BaseDataset(Dataset):
         audio = self.preprocess_audio(audio)
 
         spectrogram = self.get_spectrogram(audio)
+        spectrogram = spectrogram.clamp_min(1e-5).log()
 
         spectrogram = self.preprocess_spectrogram(spectrogram)
 
