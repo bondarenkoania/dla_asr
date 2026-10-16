@@ -18,6 +18,7 @@ text_encoder:
   _target_: src.text_encoder.CTCTextEncoder
 trainer:
   log_step: 10
+  media_log_every_n_epochs: 5
   n_epochs: 400
   epoch_len: 100
   device_tensors: ["spectrogram", "text_encoded"]

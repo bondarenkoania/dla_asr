@@ -78,6 +78,9 @@ class BaseTrainer:
         self.batch_transforms = batch_transforms
 
         # define dataloaders
+        self.sample_rates = {
+            part: loader.dataset.target_sr for part, loader in dataloaders.items()
+        }
         self.train_dataloader = dataloaders["train"]
         if epoch_len is None:
             # epoch-based training
@@ -269,13 +272,16 @@ class BaseTrainer:
                     "learning rate", self.lr_scheduler.get_last_lr()[0]
                 )
                 self._log_scalars(self.train_metrics)
-                self._log_batch(batch_idx, batch)
                 # we don't want to reset train metrics at the start of every epoch
                 # because we are interested in recent train metrics
                 last_train_metrics = self.train_metrics.result()
                 self.train_metrics.reset()
             if batch_idx + 1 >= self.epoch_len:
                 break
+
+        if epoch % self.config.trainer.media_log_every_n_epochs == 0:
+            self.writer.set_step(epoch * self.epoch_len, "train")
+            self._log_batch(batch_idx, batch)
 
         logs = last_train_metrics
 
@@ -312,9 +318,8 @@ class BaseTrainer:
                 )
             self.writer.set_step(epoch * self.epoch_len, part)
             self._log_scalars(self.evaluation_metrics)
-            self._log_batch(
-                batch_idx, batch, part
-            )  # log only the last batch during inference
+            if epoch % self.config.trainer.media_log_every_n_epochs == 0:
+                self._log_batch(batch_idx, batch, part)
 
         return self.evaluation_metrics.result()
 

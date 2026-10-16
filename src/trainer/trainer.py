@@ -90,17 +90,15 @@ class Trainer(BaseTrainer):
             mode (str): train or inference. Defines which logging
                 rules to apply.
         """
-        # method to log data from you batch
-        # such as audio, text or images, for example
+        self.log_spectrogram(**batch)
+        self.log_audio(mode=mode, **batch)
 
-        # logging scheme might be different for different partitions
-        if mode == "train":  # the method is called only every self.log_step steps
-            self.log_spectrogram(**batch)
-        else:
-            # Log Stuff
-            self.log_spectrogram(**batch)
-            if batch.get("pred_texts_by_decoder"):
-                self.log_predictions(**batch)
+        if mode != "train" and batch.get("pred_texts_by_decoder"):
+            self.log_predictions(**batch)
+
+    def log_audio(self, mode, audio, **batch):
+        sample_rate = self.sample_rates[mode]
+        self.writer.add_audio("audio", audio[0], sample_rate=sample_rate)
 
     def log_spectrogram(self, spectrogram, **batch):
         spectrogram_for_plot = spectrogram[0].detach().cpu()
@@ -112,7 +110,7 @@ class Trainer(BaseTrainer):
         target_texts,
         audio_path,
         pred_texts_by_decoder,
-        examples_to_log=5,
+        examples_to_log=3,
         **batch,
     ):
         rows = {}
