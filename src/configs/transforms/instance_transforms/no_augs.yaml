@@ -9,7 +9,7 @@ train:
 
 
 inference:
-  get_spectrogram:
+  get_spectrogram: # special key for getting spectrogram
     _target_: torchaudio.transforms.MelSpectrogram
     sample_rate: 16000
     n_mels: ${model.n_feats}
