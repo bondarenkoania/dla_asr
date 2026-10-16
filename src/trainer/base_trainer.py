@@ -23,6 +23,7 @@ class BaseTrainer:
         optimizer,
         lr_scheduler,
         text_encoder,
+        decoders,
         config,
         device,
         dataloaders,
@@ -73,9 +74,13 @@ class BaseTrainer:
         self.optimizer = optimizer
         self.lr_scheduler = lr_scheduler
         self.text_encoder = text_encoder
+        self.decoders = decoders
         self.batch_transforms = batch_transforms
 
         # define dataloaders
+        self.sample_rates = {
+            part: loader.dataset.target_sr for part, loader in dataloaders.items()
+        }
         self.train_dataloader = dataloaders["train"]
         if epoch_len is None:
             # epoch-based training
@@ -110,6 +115,27 @@ class BaseTrainer:
             self.mnt_mode, self.mnt_metric = self.monitor.split()
             assert self.mnt_mode in ["min", "max"]
 
+            mnt_metrics = {
+                f"{part}_{met.name}"
+                for part in self.evaluation_dataloaders
+                for met in metrics["inference"]
+            }
+            if self.mnt_metric in mnt_metrics:
+                decoder_name = self.cfg_trainer.get("monitor_decoder")
+                if decoder_name is None:
+                    if len(self.decoders) != 1:
+                        raise ValueError(
+                            "Set trainer.monitor_decoder when monitoring CER/WER "
+                            "with multiple decoders."
+                        )
+                    decoder_name = self.decoders.keys()[0]
+                if decoder_name not in self.decoders:
+                    raise ValueError(
+                        f"Unknown monitor decoder: {decoder_name}. "
+                        f"Available decoders: {list(self.decoders)}"
+                    )
+                self.mnt_metric = f"{self.mnt_metric}_({decoder_name})"
+
             self.mnt_best = inf if self.mnt_mode == "min" else -inf
             self.early_stop = self.cfg_trainer.get("early_stop", inf)
             if self.early_stop <= 0:
@@ -120,15 +146,26 @@ class BaseTrainer:
 
         # define metrics
         self.metrics = metrics
+        metric_names_train = [
+            f"{met.name}_({decoder_name})"
+            for decoder_name in self.decoders
+            for met in self.metrics["train"]
+        ]
+        metric_names_inference = [
+            f"{met.name}_({decoder_name})"
+            for decoder_name in self.decoders
+            for met in self.metrics["inference"]
+        ]
+
         self.train_metrics = MetricTracker(
             *self.config.writer.loss_names,
             "grad_norm",
-            *[m.name for m in self.metrics["train"]],
+            *metric_names_train,
             writer=self.writer,
         )
         self.evaluation_metrics = MetricTracker(
             *self.config.writer.loss_names,
-            *[m.name for m in self.metrics["inference"]],
+            *metric_names_inference,
             writer=self.writer,
         )
 
@@ -235,13 +272,16 @@ class BaseTrainer:
                     "learning rate", self.lr_scheduler.get_last_lr()[0]
                 )
                 self._log_scalars(self.train_metrics)
-                self._log_batch(batch_idx, batch)
                 # we don't want to reset train metrics at the start of every epoch
                 # because we are interested in recent train metrics
                 last_train_metrics = self.train_metrics.result()
                 self.train_metrics.reset()
             if batch_idx + 1 >= self.epoch_len:
                 break
+
+        if epoch % self.config.trainer.media_log_every_n_epochs == 0:
+            self.writer.set_step(epoch * self.epoch_len, "train")
+            self._log_batch(batch_idx, batch)
 
         logs = last_train_metrics
 
@@ -278,9 +318,8 @@ class BaseTrainer:
                 )
             self.writer.set_step(epoch * self.epoch_len, part)
             self._log_scalars(self.evaluation_metrics)
-            self._log_batch(
-                batch_idx, batch, part
-            )  # log only the last batch during inference
+            if epoch % self.config.trainer.media_log_every_n_epochs == 0:
+                self._log_batch(batch_idx, batch, part)
 
         return self.evaluation_metrics.result()
 

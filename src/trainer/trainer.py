@@ -1,10 +1,11 @@
 from pathlib import Path
 
 import pandas as pd
+import torch
 
 from src.logger.utils import plot_spectrogram
+from src.metrics import CERMetric, WERMetric
 from src.metrics.tracker import MetricTracker
-from src.metrics.utils import calc_cer, calc_wer
 from src.trainer.base_trainer import BaseTrainer
 
 
@@ -57,8 +58,24 @@ class Trainer(BaseTrainer):
         for loss_name in self.config.writer.loss_names:
             metrics.update(loss_name, batch[loss_name].item())
 
-        for met in metric_funcs:
-            metrics.update(met.name, met(**batch))
+        batch["pred_texts_by_decoder"] = {}
+
+        # update metrix for each type of decoder (argmax or beam search)
+        if metric_funcs:
+            target_texts = [self.text_encoder.normalize_text(t) for t in batch["text"]]
+            batch["target_texts"] = target_texts
+
+            with torch.no_grad():
+                for decoder_name, decoder in self.decoders.items():
+                    pred_texts = decoder(**batch)
+                    batch["pred_texts_by_decoder"][decoder_name] = pred_texts
+
+                    for met in metric_funcs:
+                        metric_name = f"{met.name}_({decoder_name})"
+
+                        value = met(pred_texts=pred_texts, target_texts=target_texts)
+                        metrics.update(metric_name, value)
+
         return batch
 
     def _log_batch(self, batch_idx, batch, mode="train"):
@@ -73,16 +90,15 @@ class Trainer(BaseTrainer):
             mode (str): train or inference. Defines which logging
                 rules to apply.
         """
-        # method to log data from you batch
-        # such as audio, text or images, for example
+        self.log_spectrogram(**batch)
+        self.log_audio(mode=mode, **batch)
 
-        # logging scheme might be different for different partitions
-        if mode == "train":  # the method is called only every self.log_step steps
-            self.log_spectrogram(**batch)
-        else:
-            # Log Stuff
-            self.log_spectrogram(**batch)
+        if mode != "train" and batch.get("pred_texts_by_decoder"):
             self.log_predictions(**batch)
+
+    def log_audio(self, mode, audio, **batch):
+        sample_rate = self.sample_rates[mode]
+        self.writer.add_audio("audio", audio[0], sample_rate=sample_rate)
 
     def log_spectrogram(self, spectrogram, **batch):
         spectrogram_for_plot = spectrogram[0].detach().cpu()
@@ -90,34 +106,37 @@ class Trainer(BaseTrainer):
         self.writer.add_image("spectrogram", image)
 
     def log_predictions(
-        self, text, log_probs, log_probs_length, audio_path, examples_to_log=10, **batch
+        self,
+        target_texts,
+        audio_path,
+        pred_texts_by_decoder,
+        examples_to_log=3,
+        **batch,
     ):
-        # TODO add beam search
-        # Note: by improving text encoder and metrics design
-        # this logging can also be improved significantly
-
-        argmax_inds = log_probs.cpu().argmax(-1).numpy()
-        argmax_inds = [
-            inds[: int(ind_len)]
-            for inds, ind_len in zip(argmax_inds, log_probs_length.numpy())
-        ]
-        argmax_texts_raw = [self.text_encoder.decode(inds) for inds in argmax_inds]
-        argmax_texts = [self.text_encoder.ctc_decode(inds) for inds in argmax_inds]
-        tuples = list(zip(argmax_texts, text, argmax_texts_raw, audio_path))
-
         rows = {}
-        for pred, target, raw_pred, audio_path in tuples[:examples_to_log]:
-            target = self.text_encoder.normalize_text(target)
-            wer = calc_wer(target, pred) * 100
-            cer = calc_cer(target, pred) * 100
 
-            rows[Path(audio_path).name] = {
-                "target": target,
-                "raw prediction": raw_pred,
-                "predictions": pred,
-                "wer": wer,
-                "cer": cer,
-            }
+        for i, (audio_path, target) in enumerate(zip(audio_path, target_texts)):
+            if i >= examples_to_log:
+                break
+
+            row = {"target": target}
+
+            for decoder_name, pred_texts in pred_texts_by_decoder.items():
+                pred = pred_texts[i]
+
+                wer_numer, wer_denom = WERMetric.calc_wer_stats(target, pred)
+                cer_numer, cer_denom = CERMetric.calc_cer_stats(target, pred)
+
+                row[f"prediction_({decoder_name})"] = pred
+                row[f"WER_({decoder_name})"] = (
+                    wer_numer / wer_denom * 100 if wer_denom != 0 else None
+                )
+                row[f"CER_({decoder_name})"] = (
+                    cer_numer / cer_denom * 100 if cer_denom != 0 else None
+                )
+
+            rows[Path(audio_path).name] = row
+
         self.writer.add_table(
             "predictions", pd.DataFrame.from_dict(rows, orient="index")
         )

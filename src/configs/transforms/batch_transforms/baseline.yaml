@@ -1,0 +1,12 @@
+train: null
+inference: null
+
+# Example structure:
+# train:
+#   spectrogram: # name of the batch tensor to transform
+#     _target_: torch.nn.Identity
+#   audio:
+#     _target_: src.transforms.Normalize1D
+# inference:
+#   spectrogram:
+#     _target_: torch.nn.Identity

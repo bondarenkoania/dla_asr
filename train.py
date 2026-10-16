@@ -12,7 +12,7 @@ from src.utils.init_utils import set_random_seed, setup_saving_and_logging
 warnings.filterwarnings("ignore", category=UserWarning)
 
 
-@hydra.main(version_base=None, config_path="src/configs", config_name="baseline")
+@hydra.main(version_base=None, config_path="src/configs", config_name="train")
 def main(config):
     """
     Main script for training. Instantiates the model, optimizer, scheduler,
@@ -36,6 +36,12 @@ def main(config):
     # setup text_encoder
     text_encoder = instantiate(config.text_encoder)
 
+    # setup decoders for predictions
+    decoders = {
+        name: instantiate(decoder_config, text_encoder=text_encoder)
+        for name, decoder_config in config.decoder.items()
+    }
+
     # setup data_loader instances
     # batch_transforms should be put on device
     dataloaders, batch_transforms = get_dataloaders(config, text_encoder, device)
@@ -50,10 +56,7 @@ def main(config):
     metrics = {"train": [], "inference": []}
     for metric_type in ["train", "inference"]:
         for metric_config in config.metrics.get(metric_type, []):
-            # use text_encoder in metrics
-            metrics[metric_type].append(
-                instantiate(metric_config, text_encoder=text_encoder)
-            )
+            metrics[metric_type].append(instantiate(metric_config))
 
     # build optimizer, learning rate scheduler
     trainable_params = filter(lambda p: p.requires_grad, model.parameters())
@@ -71,6 +74,7 @@ def main(config):
         optimizer=optimizer,
         lr_scheduler=lr_scheduler,
         text_encoder=text_encoder,
+        decoders=decoders,
         config=config,
         device=device,
         dataloaders=dataloaders,

@@ -1,0 +1,7 @@
+defaults:
+  - conformer
+  - _self_
+
+d_model: 144
+num_blocks: 16
+num_heads: 4

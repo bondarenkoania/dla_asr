@@ -1,0 +1,3 @@
+BeamSearch:
+  _target_: src.decoder.CTCBeamSearchDecoder
+  beam_size: 5

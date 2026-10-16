@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import torch
 from tqdm.auto import tqdm
 
@@ -21,6 +23,7 @@ class Inferencer(BaseTrainer):
         device,
         dataloaders,
         text_encoder,
+        decoders,
         save_path,
         metrics=None,
         batch_transforms=None,
@@ -36,6 +39,7 @@ class Inferencer(BaseTrainer):
             dataloaders (dict[DataLoader]): dataloaders for different
                 sets of data.
             text_encoder (CTCTextEncoder): text encoder.
+            decoders (dict): decoders for predictions.
             save_path (str): path to save model predictions and other
                 information.
             metrics (dict): dict with the definition of metrics for
@@ -59,22 +63,29 @@ class Inferencer(BaseTrainer):
         self.device = device
 
         self.model = model
-        self.batch_transforms = batch_transforms
+        self.batch_transforms = {} if batch_transforms is None else batch_transforms
 
         self.text_encoder = text_encoder
+        self.decoders = decoders
 
         # define dataloaders
         self.evaluation_dataloaders = {k: v for k, v in dataloaders.items()}
 
         # path definition
-
-        self.save_path = save_path
+        self.save_path = Path(save_path)
 
         # define metrics
         self.metrics = metrics
+
+        metric_names = [
+            f"{met.name}_({decoder_name})"
+            for decoder_name in self.decoders
+            for met in self.metrics["inference"]
+        ]
+
         if self.metrics is not None:
             self.evaluation_metrics = MetricTracker(
-                *[m.name for m in self.metrics["inference"]],
+                *metric_names,
                 writer=None,
             )
         else:
@@ -120,42 +131,43 @@ class Inferencer(BaseTrainer):
                 the dataloader (possibly transformed via batch transform)
                 and model outputs.
         """
-        # TODO change inference logic so it suits ASR assignment
-        # and task pipeline
 
         batch = self.move_batch_to_device(batch)
-        batch = self.transform_batch(batch)  # transform batch on device -- faster
+        batch = self.transform_batch(batch)
 
         outputs = self.model(**batch)
         batch.update(outputs)
 
-        if metrics is not None:
+        batch["pred_texts_by_decoder"] = {}
+        with torch.no_grad():
+            for decoder_name, decoder in self.decoders.items():
+                pred_texts = decoder(**batch)
+                batch["pred_texts_by_decoder"][decoder_name] = pred_texts
+
+        if metrics is not None and batch["text"] is not None:
+            target_texts = [self.text_encoder.normalize_text(t) for t in batch["text"]]
+            batch["target_texts"] = target_texts
+
             for met in self.metrics["inference"]:
-                metrics.update(met.name, met(**batch))
+                for decoder_name, pred_texts in batch["pred_texts_by_decoder"].items():
+                    metric_name = f"{met.name}_({decoder_name})"
 
-        # Some saving logic. This is an example
-        # Use if you need to save predictions on disk
+                    value = met(pred_texts=pred_texts, target_texts=target_texts)
+                    metrics.update(metric_name, value)
 
-        batch_size = batch["logits"].shape[0]
-        current_id = batch_idx * batch_size
+        if self.save_path is not None:
+            for decoder_name, pred_texts in batch["pred_texts_by_decoder"].items():
+                if len(self.decoders) > 1:
+                    output_dir = Path(self.save_path) / part / decoder_name
+                else:
+                    output_dir = Path(self.save_path) / part
 
-        for i in range(batch_size):
-            # clone because of
-            # https://github.com/pytorch/pytorch/issues/1995
-            logits = batch["logits"][i].clone()
-            label = batch["labels"][i].clone()
-            pred_label = logits.argmax(dim=-1)
+                output_dir.mkdir(parents=True, exist_ok=True)
 
-            output_id = current_id + i
-
-            output = {
-                "pred_label": pred_label,
-                "label": label,
-            }
-
-            if self.save_path is not None:
-                # you can use safetensors or other lib here
-                torch.save(output, self.save_path / part / f"output_{output_id}.pth")
+                for pred_text, audio_path in zip(pred_texts, batch["audio_path"]):
+                    utterance_id = Path(audio_path).stem
+                    output_path = output_dir / f"{utterance_id}.txt"
+                    output_path.write_text(pred_text, encoding="utf-8")
 
         return batch
 
@@ -173,7 +185,8 @@ class Inferencer(BaseTrainer):
         self.is_train = False
         self.model.eval()
 
-        self.evaluation_metrics.reset()
+        if self.evaluation_metrics:
+            self.evaluation_metrics.reset()
 
         # create Save dir
         if self.save_path is not None:
@@ -192,4 +205,4 @@ class Inferencer(BaseTrainer):
                     metrics=self.evaluation_metrics,
                 )
 
-        return self.evaluation_metrics.result()
+        return self.evaluation_metrics.result() if self.evaluation_metrics else None

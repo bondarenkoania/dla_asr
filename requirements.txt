@@ -2,15 +2,18 @@ torch==2.2.0
 torchvision==0.17.0
 torchaudio==2.2.0
 datasets
+pyarrow==25.0.1
 soundfile
 numpy==1.26.4
+scipy
 torch_audiomentations
 tqdm
 matplotlib
-pandas
+pandas==3.0.6
 wandb
-comet_ml
+comet_ml==3.58.7
 hydra-core
+wget
 
 black
 isort

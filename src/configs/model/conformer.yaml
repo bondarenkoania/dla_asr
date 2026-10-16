@@ -1,0 +1,9 @@
+_target_: src.model.ConformerModel
+n_feats: 80
+d_model: ???
+num_blocks: ???
+num_heads: ???
+ff_expansion_factor: 4
+dropout: 0.1
+kernel_size: 32
+subsampling_channels: 32

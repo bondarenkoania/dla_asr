@@ -1,4 +1,4 @@
-from datetime import datetime
+from time import perf_counter
 
 import numpy as np
 import pandas as pd
@@ -63,7 +63,7 @@ class WandBWriter:
         # the mode is usually equal to the current partition name
         # used to separate Partition1 and Partition2 metrics
         self.mode = ""
-        self.timer = datetime.now()
+        self.timer = None
 
     def set_step(self, step, mode="train"):
         """
@@ -76,17 +76,16 @@ class WandBWriter:
             step (int): current step.
             mode (str): current mode (partition name).
         """
-        self.mode = mode
+        now = perf_counter()
         previous_step = self.step
+        previous_mode = self.mode
         self.step = step
-        if step == 0:
-            self.timer = datetime.now()
-        else:
-            duration = datetime.now() - self.timer
-            self.add_scalar(
-                "steps_per_sec", (self.step - previous_step) / duration.total_seconds()
-            )
-            self.timer = datetime.now()
+        self.mode = mode
+        if self.timer is not None and mode == previous_mode and step > previous_step:
+            duration = now - self.timer
+            if duration > 0:
+                self.add_scalar("steps_per_sec", (step - previous_step) / duration)
+        self.timer = now
 
     def _object_name(self, object_name):
         """

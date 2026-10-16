@@ -7,6 +7,6 @@ class Gain(nn.Module):
         super().__init__()
         self._aug = torch_audiomentations.Gain(*args, **kwargs)
 
-    def __call__(self, data: Tensor):
-        x = data.unsqueeze(1)
-        return self._aug(x).squeeze(1)
+    def forward(self, data: Tensor):
+        x = data.unsqueeze(0)
+        return self._aug(x).squeeze(0)
