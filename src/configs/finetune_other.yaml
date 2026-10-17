@@ -1,0 +1,26 @@
+defaults:
+  - train
+  - override /datasets: librispeech_other
+  - override /decoder: compare
+  - override /transforms/instance_transforms: finetune_other
+  - _self_
+
+optimizer:
+  lr: 1e-4
+
+lr_scheduler:
+  warmup_steps: 300
+
+writer:
+  run_name: conformer_medium_other
+
+trainer:
+  from_pretrained: ???
+  resume_from: null
+  n_epochs: 5
+  epoch_len: 1000
+  media_log_every_n_epochs: 1
+  monitor: "min val_other_WER"
+  monitor_decoder: BeamSearch
+  save_period: 1
+  save_last: True
