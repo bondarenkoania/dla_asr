@@ -3,4 +3,11 @@ Argmax:
 
 BeamSearch:
   _target_: src.decoder.CTCBeamSearchDecoder
-  beam_size: 5
+  beam_size: 10
+
+BeamSearchLM:
+  _target_: src.decoder.CTCBeamSearchLMDecoder
+  beam_size: 10
+  path_to_lm: ???
+  alpha: 0.5
+  beta: 0.1

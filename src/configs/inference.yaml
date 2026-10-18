@@ -4,7 +4,7 @@ defaults:
   - datasets: librispeech_test
   - dataloader: baseline
   - transforms: no_augs
-  - decoder: greedy
+  - decoder: beam_lm
   - _self_
 text_encoder:
   _target_: src.text_encoder.CTCTextEncoder

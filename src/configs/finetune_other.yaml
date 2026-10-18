@@ -1,7 +1,7 @@
 defaults:
   - train
   - override /datasets: librispeech_other
-  - override /decoder: compare
+  - override /decoder: greedy
   - override /transforms/instance_transforms: finetune_other
   - _self_
 
@@ -17,10 +17,10 @@ writer:
 trainer:
   from_pretrained: ???
   resume_from: null
-  n_epochs: 5
+  n_epochs: 20
   epoch_len: 1000
   media_log_every_n_epochs: 1
   monitor: "min val_other_WER"
-  monitor_decoder: BeamSearch
+  monitor_decoder: Argmax
   save_period: 1
   save_last: True

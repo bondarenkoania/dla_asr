@@ -72,7 +72,7 @@ class Inferencer(BaseTrainer):
         self.evaluation_dataloaders = {k: v for k, v in dataloaders.items()}
 
         # path definition
-        self.save_path = Path(save_path)
+        self.save_path = Path(save_path) if save_path is not None else None
 
         # define metrics
         self.metrics = metrics
