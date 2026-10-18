@@ -1,0 +1,30 @@
+defaults:
+  - train
+  - override /datasets: librispeech_other
+  - override /decoder: greedy
+  - override /transforms/instance_transforms: finetune_other
+  - override /lr_scheduler: cosine
+  - _self_
+
+optimizer:
+  lr: 5e-5
+
+lr_scheduler:
+  T_max: 25000
+  eta_min: 1e-5
+
+dataloader:
+  batch_size: 16
+
+writer:
+  run_name: conformer_medium_other_cosine
+
+trainer:
+  from_pretrained: ???
+  n_epochs: 25
+  epoch_len: 1000
+  media_log_every_n_epochs: 5
+  monitor: "min val_other_WER"
+  monitor_decoder: Argmax
+  save_period: 1
+  save_last: True
