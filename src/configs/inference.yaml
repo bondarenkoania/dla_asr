@@ -1,5 +1,5 @@
 defaults:
-  - model: baseline
+  - model: conformer_medium
   - metrics: baseline
   - datasets: librispeech_test
   - dataloader: baseline
@@ -8,9 +8,11 @@ defaults:
   - _self_
 text_encoder:
   _target_: src.text_encoder.CTCTextEncoder
+lm_path: data/lm/librispeech_3gram.arpa
 inferencer:
   device_tensors: ["spectrogram"]
   device: auto
+  # Set null to calculate metrics without saving predictions.
   save_path: ???
   seed: 1
   from_pretrained: ???

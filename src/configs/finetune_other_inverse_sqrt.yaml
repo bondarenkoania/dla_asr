@@ -3,6 +3,7 @@ defaults:
   - override /datasets: librispeech_other
   - override /decoder: greedy
   - override /transforms/instance_transforms: finetune_other
+  - override /lr_scheduler: warmup_inverse_sqrt
   - _self_
 
 optimizer:
@@ -16,10 +17,9 @@ writer:
 
 trainer:
   from_pretrained: ???
-  resume_from: null
-  n_epochs: 20
+  n_epochs: 25
   epoch_len: 1000
-  media_log_every_n_epochs: 1
+  media_log_every_n_epochs: 5
   monitor: "min val_other_WER"
   monitor_decoder: Argmax
   save_period: 1

@@ -13,9 +13,6 @@ lr_scheduler:
   T_max: 25000
   eta_min: 1e-5
 
-dataloader:
-  batch_size: 16
-
 writer:
   run_name: conformer_medium_other_cosine
 
