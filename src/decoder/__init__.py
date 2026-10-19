@@ -1,2 +1,3 @@
 from src.decoder.beam_search_decoder import CTCBeamSearchDecoder
+from src.decoder.beam_search_lm_decoder import CTCBeamSearchLMDecoder
 from src.decoder.greedy_decoder import CTCGreedyDecoder

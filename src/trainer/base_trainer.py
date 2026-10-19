@@ -128,7 +128,7 @@ class BaseTrainer:
                             "Set trainer.monitor_decoder when monitoring CER/WER "
                             "with multiple decoders."
                         )
-                    decoder_name = self.decoders.keys()[0]
+                    decoder_name = next(iter(self.decoders))
                 if decoder_name not in self.decoders:
                     raise ValueError(
                         f"Unknown monitor decoder: {decoder_name}. "
@@ -221,7 +221,12 @@ class BaseTrainer:
             )
 
             if epoch % self.save_period == 0 or best:
-                self._save_checkpoint(epoch, save_best=best, only_best=True)
+                self._save_checkpoint(
+                    epoch,
+                    save_best=best,
+                    only_best=True,
+                    save_last=self.cfg_trainer.get("save_last", False),
+                )
 
             if stop_process:  # early_stop
                 break
@@ -493,7 +498,9 @@ class BaseTrainer:
         for metric_name in metric_tracker.keys():
             self.writer.add_scalar(f"{metric_name}", metric_tracker.avg(metric_name))
 
-    def _save_checkpoint(self, epoch, save_best=False, only_best=False):
+    def _save_checkpoint(
+        self, epoch, save_best=False, only_best=False, save_last=False
+    ):
         """
         Save the checkpoints.
 
@@ -503,6 +510,8 @@ class BaseTrainer:
             only_best (bool): if True and the checkpoint is the best, save it only as
                 'model_best.pth'(do not duplicate the checkpoint as
                 checkpoint-epochEpochNumber.pth)
+            save_last (bool): save 'model_last.pth' instead of epoch-numbered
+                checkpoints, including when saving the best checkpoint.
         """
         arch = type(self.model).__name__
         state = {
@@ -514,17 +523,21 @@ class BaseTrainer:
             "monitor_best": self.mnt_best,
             "config": self.config,
         }
-        filename = str(self.checkpoint_dir / f"checkpoint-epoch{epoch}.pth")
-        if not (only_best and save_best):
-            torch.save(state, filename)
+        if save_last or not (only_best and save_best):
+            filename = "model_last.pth" if save_last else f"checkpoint-epoch{epoch}.pth"
+            path = self.checkpoint_dir / filename
+            torch.save(state, path)
             if self.config.writer.log_checkpoints:
-                self.writer.add_checkpoint(filename, str(self.checkpoint_dir.parent))
-            self.logger.info(f"Saving checkpoint: {filename} ...")
+                self.writer.add_checkpoint(str(path), str(self.checkpoint_dir.parent))
+            self.logger.info(f"Saving checkpoint: {path} ...")
+
         if save_best:
-            best_path = str(self.checkpoint_dir / "model_best.pth")
+            best_path = self.checkpoint_dir / "model_best.pth"
             torch.save(state, best_path)
             if self.config.writer.log_checkpoints:
-                self.writer.add_checkpoint(best_path, str(self.checkpoint_dir.parent))
+                self.writer.add_checkpoint(
+                    str(best_path), str(self.checkpoint_dir.parent)
+                )
             self.logger.info("Saving current best: model_best.pth ...")
 
     def _resume_checkpoint(self, resume_path):

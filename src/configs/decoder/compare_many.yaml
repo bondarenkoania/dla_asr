@@ -1,0 +1,77 @@
+Argmax:
+  _target_: src.decoder.CTCGreedyDecoder
+
+BeamSearch_beam5:
+  _target_: src.decoder.CTCBeamSearchDecoder
+  beam_size: 5
+
+BeamSearch_beam10:
+  _target_: src.decoder.CTCBeamSearchDecoder
+  beam_size: 10
+
+BeamSearch_beam15:
+  _target_: src.decoder.CTCBeamSearchDecoder
+  beam_size: 15
+
+BeamSearchLM_beam5_alpha05:
+  _target_: src.decoder.CTCBeamSearchLMDecoder
+  beam_size: 5
+  path_to_lm: ${lm_path}
+  alpha: 0.5
+  beta: 0.1
+
+BeamSearchLM_beam10_alpha05:
+  _target_: src.decoder.CTCBeamSearchLMDecoder
+  beam_size: 10
+  path_to_lm: ${lm_path}
+  alpha: 0.5
+  beta: 0.1
+
+BeamSearchLM_beam15_alpha05:
+  _target_: src.decoder.CTCBeamSearchLMDecoder
+  beam_size: 15
+  path_to_lm: ${lm_path}
+  alpha: 0.5
+  beta: 0.1
+
+BeamSearchLM_beam5_alpha03:
+  _target_: src.decoder.CTCBeamSearchLMDecoder
+  beam_size: 5
+  path_to_lm: ${lm_path}
+  alpha: 0.3
+  beta: 0.1
+
+BeamSearchLM_beam10_alpha03:
+  _target_: src.decoder.CTCBeamSearchLMDecoder
+  beam_size: 10
+  path_to_lm: ${lm_path}
+  alpha: 0.3
+  beta: 0.1
+
+BeamSearchLM_beam15_alpha03:
+  _target_: src.decoder.CTCBeamSearchLMDecoder
+  beam_size: 15
+  path_to_lm: ${lm_path}
+  alpha: 0.3
+  beta: 0.1
+
+BeamSearchLM_beam5_alpha07:
+  _target_: src.decoder.CTCBeamSearchLMDecoder
+  beam_size: 5
+  path_to_lm: ${lm_path}
+  alpha: 0.7
+  beta: 0.1
+
+BeamSearchLM_beam10_alpha07:
+  _target_: src.decoder.CTCBeamSearchLMDecoder
+  beam_size: 10
+  path_to_lm: ${lm_path}
+  alpha: 0.7
+  beta: 0.1
+
+BeamSearchLM_beam15_alpha07:
+  _target_: src.decoder.CTCBeamSearchLMDecoder
+  beam_size: 15
+  path_to_lm: ${lm_path}
+  alpha: 0.7
+  beta: 0.1

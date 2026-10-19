@@ -1,0 +1,6 @@
+BeamSearchLM:
+  _target_: src.decoder.CTCBeamSearchLMDecoder
+  beam_size: 15
+  path_to_lm: ${lm_path}
+  alpha: 0.5
+  beta: 0.1
